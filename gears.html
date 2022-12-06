@@ -46,7 +46,7 @@ function init() {
 }
 
 function inputCall() {
-  // check if there is a new number of outer magnets
+  // update the number of outer magnets
   nop = document.getElementById("nouter").value;
   init();
 }
@@ -101,7 +101,7 @@ function draw() {
     }
     context.fill();
 
-    drawForce(context, x1, y1, fx[i], fy[i]);
+    drawForce(x1, y1, fx[i], fy[i]);
   }
   for (let i = 0; i<nip; ++i) {
     context.beginPath();
@@ -117,7 +117,7 @@ function draw() {
   }
 }
 
-function drawForce(context, x1, y1, dx, dy) {
+function drawForce(x1, y1, dx, dy) {
   let x2 = x1 + dx;
   let y2 = y1 + dy;
   context.beginPath();
