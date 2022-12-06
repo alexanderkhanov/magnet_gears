@@ -3,7 +3,7 @@
 <html>
 <body>
 
-<span style="font-size:16px;">Number of outer magnets:</span><input style="font-size:16px;" type="number" id="nouter" value="6" min="1" max="15" oninput="inputCall()">
+<span style="font-size:16px;">Number of outer magnets:</span><input style="font-size:16px;" type="number" id="nouter" value="6" min="1" max="15" oninput="init()">
 <br>
 
 <canvas id="canvas" width="600" height="600"
@@ -31,6 +31,7 @@ var phi0 = 0;
 init();
 
 function init() {
+  nop = document.getElementById("nouter").value;
   fop = [];
   fx = [];
   fy = [];
@@ -45,19 +46,12 @@ function init() {
   }
 }
 
-function inputCall() {
-  // update the number of outer magnets
-  nop = document.getElementById("nouter").value;
-  init();
-}
-
 function update() {
   // inner magnets are rotating with constant speed
   let dphi = 0.02;
   for (let i = 0; i<nip; ++i) {
     fip[i] += dphi;
   }
-  draw();
 
   // calculate the overall torque on the outer magnets
   let ft = 0;
@@ -84,6 +78,8 @@ function update() {
       fy[i] += strength*dy/dd;
     }
   }
+
+  draw();
 }
 
 function draw() {
