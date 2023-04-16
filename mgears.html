@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<!-- origin: https://www.w3schools.com/graphics/canvas_clock_start.asp -->
+<html>
+<body>
+
+<span style="font-size:16px;">Number of outer magnets:</span><input style="font-size:16px;" type="number" id="nouter" value="10" min="1" max="24" oninput="init()">
+<br>
+<span style="font-size:16px;">Number of inner magnets:</span><input style="font-size:16px;" type="number" id="ninner" value="12" min="1" max="24" oninput="init()">
+<br>
+<span style="font-size:16px;">Number of modulators:</span><input style="font-size:16px;" type="number" id="nmodul" value="9" min="1" max="24" oninput="init()">
+<br>
+
+<canvas id="canvas" width="600" height="600"
+style="background-color:white">
+</canvas>
+
+<script>
+var canvas = document.getElementById("canvas");
+var context = canvas.getContext("2d");
+setInterval(update, 50);
+
+var fop = []; // outer magnets
+var fip = []; // inner magnets
+var fmp = []; // modulators
+
+// modulator strength
+var ms = [];
+
+// force acting on outer magnets
+var fx = [];
+var fy = [];
+
+const outerradius = 180;
+const innerradius = 80;
+const modulradius = 130;
+var nop = 10;
+var nip = 12;
+var nmp = 9;
+const x0 = canvas.width/2;
+const y0 = canvas.height/2;
+var phi0 = 0;
+
+init();
+
+function init() {
+  nop = document.getElementById("nouter").value;
+  nip = document.getElementById("ninner").value;
+  nmp = document.getElementById("nmodul").value;
+  fop = [];
+  fx = [];
+  fy = [];
+  for (let i = 0; i<nop; ++i) {
+    fop.push(2*Math.PI*i/nop);
+    fx.push(0);
+    fy.push(0);
+  }
+  fip = [];
+  for (let i = 0; i<nip; ++i) {
+    fip.push(2*Math.PI*i/nip);
+  }
+  fmp = [];
+  ms = [];
+  for (let i = 0; i<nmp; ++i) {
+    fmp.push(2*Math.PI*i/nmp);
+    ms.push(0);
+  }
+}
+
+function update() {
+  // inner magnets are rotating with constant speed
+  let dphi = 0.02;
+  for (let i = 0; i<nip; ++i) {
+    fip[i] += dphi;
+  }
+
+  // calculate the overall torque on the outer magnets
+  let ft = 0;
+  for (let i = 0; i<nop; ++i) {
+    ft += -Math.sin(fop[i])*fx[i] + Math.cos(fop[i])*fy[i];
+  }
+
+  // move the magnets according to the torque
+  for (let i = 0; i<nop; ++i) {
+    fop[i] += 0.001*ft;
+  }
+
+  // calculate the field strength in the modulators
+  for (let i = 0; i<nmp; ++i) {
+    ms[i] = 0;
+    for (let j = 0; j<nip; ++j) {
+      let dx = modulradius*Math.cos(fmp[i]) - innerradius*Math.cos(fip[j]);
+      let dy = modulradius*Math.sin(fmp[i]) - innerradius*Math.sin(fip[j]);
+      let dd = Math.sqrt(Math.pow(dx,2)+Math.pow(dy,2));
+      let strength = 1e4/Math.pow(dd,2);
+      if (j%2==1) strength = -strength;
+      ms[i] += strength;
+    }
+  }
+
+  // calculate the force acting on the outer magnets
+  for (let i = 0; i<nop; ++i) {
+    fx[i] = 0;
+    fy[i] = 0;
+    for (let j = 0; j<nmp; ++j) {
+      let dx = outerradius*Math.cos(fop[i]) - modulradius*Math.cos(fmp[j]);
+      let dy = outerradius*Math.sin(fop[i]) - modulradius*Math.sin(fmp[j]);
+      let dd = Math.sqrt(Math.pow(dx,2)+Math.pow(dy,2));
+      let strength = 1e9*ms[j]/Math.pow(dd,4);
+      if (i%2==1) strength = -strength;
+      fx[i] += strength*dx/dd;
+      fy[i] += strength*dy/dd;
+    }
+  }
+
+  draw();
+}
+
+function draw() {
+  context.clearRect(0,0,canvas.width,canvas.height);
+  let radius = 10;
+  for (let i = 0; i<nop; ++i) {
+    context.beginPath();
+    let x1 = x0+outerradius*Math.cos(fop[i]);
+    let y1 = y0+outerradius*Math.sin(fop[i]);
+    context.arc(x1, y1, radius, 0, 2*Math.PI);
+    if (i%2==0) {
+      context.fillStyle = "red";
+    } else {
+      context.fillStyle = "blue";
+    }
+    context.fill();
+
+    drawForce(x1, y1, fx[i], fy[i]);
+  }
+  for (let i = 0; i<nip; ++i) {
+    context.beginPath();
+    let x1 = x0+innerradius*Math.cos(fip[i]);
+    let y1 = y0+innerradius*Math.sin(fip[i]);
+    context.arc(x1, y1, radius, 0, 2*Math.PI);
+    if (i%2==0) {
+      context.fillStyle = "red";
+    } else {
+      context.fillStyle = "blue";
+    }
+    context.fill();
+  }
+  for (let i = 0; i<nmp; ++i) {
+    context.beginPath();
+    let x1 = x0+modulradius*Math.cos(fmp[i]);
+    let y1 = y0+modulradius*Math.sin(fmp[i]);
+    context.arc(x1, y1, radius, 0, 2*Math.PI);
+    msi = 10. * 128*(ms[i]-1);
+    if (msi<0) msi = 0; else if (msi>255) msi = 255;
+    redPart = Math.round(msi);
+    bluePart = 255-redPart;
+    color = '#';
+    color += ('00' + redPart.toString(16)).substr(-2);
+    color += '00';
+    color += ('00' + bluePart.toString(16)).substr(-2);
+    context.fillStyle = color;
+    context.fill();
+  }
+}
+
+function drawForce(x1, y1, dx, dy) {
+  let x2 = x1 + dx;
+  let y2 = y1 + dy;
+  context.beginPath();
+  context.moveTo(x1, y1);
+  context.lineTo(x2, y2);
+  let dphi = Math.atan2(dy,dx);
+  let la = 10;
+  const dphi1 = 7/6*Math.PI;
+  const dphi2 = 5/6*Math.PI;
+  context.lineTo(x2+la*Math.cos(dphi+dphi1),y2+la*Math.sin(dphi+dphi1));
+  context.moveTo(x2, y2);
+  context.lineTo(x2+la*Math.cos(dphi+dphi2),y2+la*Math.sin(dphi+dphi2));
+  context.stroke();
+}
+</script>
+
+</body>
+</html>

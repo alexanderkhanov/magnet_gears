@@ -1,1 +1,1 @@
-# Magnet gears simulator
+# Magnetic gear simulator
